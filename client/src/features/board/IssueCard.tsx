@@ -20,7 +20,8 @@ export function IssueCard({ issue, now }: { issue: Issue; now: number }) {
   return (
     <article
       aria-labelledby={`issue-${issue.id}-title`}
-      className={`relative rounded-md border border-line border-l-[3px] bg-surface px-3 py-2.5 transition-colors duration-150 hover:border-line-strong has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent ${resolved ? "border-l-line hover:border-l-line-strong" : EDGE[issue.priority]}`}
+      // Resolved cards step back: plain 1px edge, muted text, outline badge.
+      className={`relative rounded-md border border-line bg-surface px-3 py-2.5 transition-colors duration-150 hover:border-line-strong has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent ${resolved ? "" : `border-l-[3px] ${EDGE[issue.priority]}`}`}
     >
       <div className="flex items-center gap-2">
         <span className="font-mono text-2xs font-medium text-ink-muted">#{issue.id}</span>
@@ -34,7 +35,10 @@ export function IssueCard({ issue, now }: { issue: Issue; now: number }) {
           {formatAge(stamp, now)}
         </time>
       </div>
-      <h3 id={`issue-${issue.id}-title`} className="mt-1.5 font-medium leading-snug text-ink">
+      <h3
+        id={`issue-${issue.id}-title`}
+        className={`mt-1.5 leading-snug ${resolved ? "font-normal text-ink-muted" : "font-medium text-ink"}`}
+      >
         {/* The title is the link (a short, clear accessible name); its ::after
             stretches over the card so the whole card is the tap target. */}
         <Link

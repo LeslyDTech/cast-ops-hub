@@ -50,6 +50,15 @@ describe("Issue detail", () => {
     expect(buttons.map((b) => b.textContent)).toEqual(labels);
   });
 
+  it("styles only the first move as the primary action", async () => {
+    renderApp("/issues/24", ({ path }) => (path === "/issues/24" ? ok(detail("open", ["in_progress", "resolved"])) : ok([])));
+    const start = await screen.findByRole("button", { name: "Start work" });
+    const resolve = screen.getByRole("button", { name: "Mark resolved" });
+    expect(start.className).toContain("bg-accent");
+    expect(resolve.className).not.toContain("bg-accent");
+    expect(resolve.className).toContain("border-line-strong");
+  });
+
   it("sends the move with the note and the actor, then shows the server's result", async () => {
     const user = userEvent.setup();
     let current = detail("in_progress", ["open", "resolved"]);

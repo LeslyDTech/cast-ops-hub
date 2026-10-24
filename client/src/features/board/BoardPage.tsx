@@ -4,6 +4,7 @@ import { formatClock } from "../../lib/time";
 import { FilterBar } from "../filters/FilterBar";
 import { useBoardFilters } from "../filters/useBoardFilters";
 import { Board } from "./Board";
+import { BoardSummaryLine } from "./BoardSummaryLine";
 
 export function BoardPage() {
   const [filters, setFilters] = useBoardFilters();
@@ -12,11 +13,14 @@ export function BoardPage() {
 
   return (
     <>
-      <div className="mb-4 flex items-baseline justify-between gap-4">
+      <div className="mb-1 flex items-baseline justify-between gap-4">
         <h1 className="text-lg font-medium tracking-tight">Issue board</h1>
         <p aria-live="polite" className="font-mono text-2xs text-ink-muted">
           {issues.isFetching ? "Updating…" : issues.dataUpdatedAt ? `Updated ${formatClock(issues.dataUpdatedAt)}` : ""}
         </p>
+      </div>
+      <div className="mb-4">
+        <BoardSummaryLine filters={filters} />
       </div>
       <div className="mb-5">
         <FilterBar filters={filters} onChange={setFilters} />

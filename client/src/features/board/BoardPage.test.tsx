@@ -52,6 +52,13 @@ describe("BoardPage", () => {
     expect(within(screen.getByRole("region", { name: "Resolved" })).getByText("Receipt paper restocked")).toBeInTheDocument();
   });
 
+  it("summarizes urgent open issues regardless of the priority filter", async () => {
+    renderBoard("/?priority=low");
+    expect(await screen.findByText("1 urgent issue open")).toBeInTheDocument();
+    expect(screen.getByText(/oldest open issue waiting/)).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith("/api/issues?status=open", expect.anything());
+  });
+
   it("labels priority in text, not color alone", async () => {
     renderBoard();
     const card = await screen.findByRole("article", { name: "Walk-in cooler reading 45°F" });

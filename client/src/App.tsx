@@ -20,7 +20,9 @@ export function App() {
             <Identity />
             <Link to={{ pathname: "/issues/new", search }} className={`${primaryButtonClass} h-10 px-3`}>
               <Plus aria-hidden="true" className="size-4" strokeWidth={2} />
-              Report<span className="hidden sm:inline">&nbsp;issue</span>
+              <span>
+                Report<span className="hidden sm:inline"> issue</span>
+              </span>
             </Link>
           </div>
         </div>

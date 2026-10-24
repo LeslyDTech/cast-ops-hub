@@ -10,23 +10,23 @@ Internal issue reporting for restaurant and food & beverage teams.
 
 ## Screenshots
 
-<!--
-  Replace each placeholder below with a real screenshot.
-  Save images in docs/screenshots/ using the file names shown, then delete the
-  placeholder line and uncomment the image line.
--->
+**Board (desktop).** A one-line shift summary, then three columns with priority readable at a glance. Resolved work steps back visually.
 
-| | |
+![Issue board on desktop: summary line, filters, and Open / In progress / Resolved columns](docs/screenshots/board-desktop.png)
+
+**Issue detail after resolving (desktop).** Status buttons come from the server's allowed moves. The audit history records who, when and why.
+
+![Issue detail panel showing a resolved issue with its history and a note from Lesly D.](docs/screenshots/issue-detail.png)
+
+| **Board (phone):** column switcher, filters that scroll sideways | **Report form (phone):** large tap targets, errors next to each field |
 |---|---|
-| **Board (desktop):** three columns, priority at a glance | **Board (phone):** column switcher, scrollable filters |
-| <!-- ![Board on desktop](docs/screenshots/board-desktop.png) --> _Screenshot coming soon: `board-desktop.png`_ | <!-- ![Board on phone](docs/screenshots/board-phone.png) --> _Screenshot coming soon: `board-phone.png`_ |
-| **Report form (phone):** large tap targets, inline errors | **Issue detail:** allowed status moves and audit history |
-| <!-- ![Report form on phone](docs/screenshots/report-form-phone.png) --> _Screenshot coming soon: `report-form-phone.png`_ | <!-- ![Issue detail panel](docs/screenshots/issue-detail.png) --> _Screenshot coming soon: `issue-detail.png`_ |
+| <img src="docs/screenshots/board-phone.png" alt="Issue board on a phone with the column switcher" width="320"> | <img src="docs/screenshots/report-form-phone.png" alt="Report form on a phone showing validation errors" width="320"> |
 
 ---
 
 ## Features
 
+- **Shift summary** above the board: how many urgent issues nobody has picked up yet, and how long the oldest open issue has been waiting. It follows the location filter but ignores the priority and status filters, so hiding a column never hides an urgent problem.
 - **Board** with Open / In progress / Resolved columns. Active columns sort by priority, then by whoever has waited longest. Resolved sorts by most recently fixed.
 - **Priority you can't miss.** Urgent and high are shown by color, fill *and* a text label, never color alone. Resolved issues drop the alarm colors.
 - **Filters** by status, priority and location. They live in the URL, so a filtered view can be bookmarked or shared.
@@ -248,7 +248,7 @@ npm test
 |---|---|---|
 | Server unit | 66 | Every pair of statuses checked against the workflow, plus reachability. zod schemas: trimming, strict keys, list filters, strict ID parsing. Status-change orchestration with a mocked repository: lock, then update, then event, and nothing written on 404 or 409. |
 | Server API | 29 | Supertest against real Postgres: create, list, filter, get and update, plus the 400, 401, 404 and 409 paths. **Rollback is proven:** a trigger makes the audit insert fail after the update, and the test checks nothing changed. **Concurrency:** simultaneous changes must leave a history with no gaps or contradictions. |
-| Client | 49 | Filter↔URL round trips, sorting, age formatting. The report form: validation, focus, payload, server errors. The detail panel: only allowed moves shown, PATCH payload and actor header, conflict handling, 404, and focus return when closing. |
+| Client | 54 | Filter↔URL round trips, sorting, age formatting, the shift summary. The report form: validation, focus, payload, server errors. The detail panel: only allowed moves shown, PATCH payload and actor header, conflict handling, 404, and focus return when closing. |
 
 The API tests use a separate schema, `cast_ops_test`, in the same database. It is rebuilt from the migration files on every run, so the tests also prove the migrations still apply cleanly. A guard refuses to wipe tables in any schema whose name doesn't end in `_test`.
 

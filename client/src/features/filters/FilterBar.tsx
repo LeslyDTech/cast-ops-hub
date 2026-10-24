@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocations } from "../../api/queries";
 import { PRIORITIES, PRIORITY_LABEL, STATUS_LABEL, STATUSES, type Priority } from "../../lib/domain";
 import { EMPTY_FILTERS, isFiltered, toggle, type BoardFilters } from "./filters";
@@ -14,12 +15,39 @@ const chip =
 
 const DOT: Partial<Record<Priority, string>> = { urgent: "bg-urgent", high: "bg-high" };
 
+// Fades the right edge while more chips are hidden off-screen, as a scroll cue.
+const FADE = "[mask-image:linear-gradient(to_right,#000_calc(100%-48px),transparent)] md:[mask-image:none]";
+
+/** True while a horizontally scrollable element has more content to the right. */
+function useMoreToTheRight() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState(false);
+  const update = useCallback(() => {
+    const el = ref.current;
+    if (el) setMore(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  }, []);
+  useEffect(() => {
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [update]);
+  return { ref, more, update };
+}
+
 export function FilterBar({ filters, onChange }: Props) {
   const locations = useLocations();
+  const scroller = useMoreToTheRight();
+  const { update } = scroller;
+  // The row's width changes when locations load or "Clear filters" appears.
+  useEffect(update, [update, filters, locations.data]);
 
   return (
     // Scrolls sideways on phones instead of wrapping into a tall block above the board.
-    <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:overflow-visible md:px-0">
+    <div
+      ref={scroller.ref}
+      onScroll={scroller.update}
+      className={`-mx-4 overflow-x-auto px-4 md:mx-0 md:overflow-visible md:px-0 ${scroller.more ? FADE : ""}`}
+    >
       <div className="flex w-max items-center gap-4 pb-1 md:w-auto md:flex-wrap">
         {/* On phones the column switcher does this job. */}
         <fieldset className="hidden items-center gap-1.5 md:flex">
