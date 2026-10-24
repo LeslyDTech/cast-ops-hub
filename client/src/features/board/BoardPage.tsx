@@ -1,3 +1,4 @@
+import { Outlet } from "react-router";
 import { useIssues } from "../../api/queries";
 import { formatClock } from "../../lib/time";
 import { FilterBar } from "../filters/FilterBar";
@@ -21,6 +22,8 @@ export function BoardPage() {
         <FilterBar filters={filters} onChange={setFilters} />
       </div>
       <Board filters={filters} query={issues} />
+      {/* Issue detail and the report form open as panels over the board. */}
+      <Outlet />
     </>
   );
 }

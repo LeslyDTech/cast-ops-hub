@@ -7,7 +7,8 @@ export default defineConfig({
   server: {
     port: 5173,
     // Same-origin /api in dev, so no CORS setup and the client never hardcodes a host.
-    proxy: { "/api": "http://localhost:4000" },
+    // API_URL lets a second stack (e.g. against the test schema) run beside the usual one.
+    proxy: { "/api": process.env.API_URL ?? "http://localhost:4000" },
   },
   test: {
     environment: "jsdom",

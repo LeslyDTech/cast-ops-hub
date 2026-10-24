@@ -9,6 +9,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router";
 import { ApiError } from "./api/client";
 import { App } from "./App";
+import { ActorProvider } from "./features/identity/ActorProvider";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,9 +24,11 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <ActorProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </ActorProvider>
     </QueryClientProvider>
   </StrictMode>,
 );

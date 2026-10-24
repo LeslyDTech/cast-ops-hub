@@ -1,24 +1,55 @@
-import { Link, Route, Routes } from "react-router";
+import { Plus } from "lucide-react";
+import { Link, Route, Routes, useLocation } from "react-router";
 import { BoardPage } from "./features/board/BoardPage";
+import { useActor } from "./features/identity/ActorProvider";
+import { IssueDetailPanel } from "./features/issue-detail/IssueDetailPanel";
+import { NewIssuePanel } from "./features/issue-form/NewIssuePanel";
+import { primaryButtonClass } from "./lib/ui";
 
 export function App() {
+  const { search } = useLocation();
   return (
     <div className="min-h-dvh">
       <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex h-12 max-w-[1280px] items-center px-4 lg:px-6">
-          <Link to="/" className="flex items-center gap-2 rounded-sm">
+        <div className="mx-auto flex h-14 max-w-[1280px] items-center gap-4 px-4 lg:px-6">
+          <Link to={{ pathname: "/", search }} className="flex items-center gap-2 rounded-sm">
             <Mark />
             <span className="font-mono text-xs font-medium uppercase tracking-[0.14em]">Cast Ops Hub</span>
           </Link>
+          <div className="ml-auto flex items-center gap-4">
+            <Identity />
+            <Link to={{ pathname: "/issues/new", search }} className={`${primaryButtonClass} h-10 px-3`}>
+              <Plus aria-hidden="true" className="size-4" strokeWidth={2} />
+              Report<span className="hidden sm:inline">&nbsp;issue</span>
+            </Link>
+          </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-[1280px] px-4 py-5 lg:px-6 lg:py-6">
         <Routes>
-          <Route path="/" element={<BoardPage />} />
+          <Route path="/" element={<BoardPage />}>
+            <Route path="issues/new" element={<NewIssuePanel />} />
+            <Route path="issues/:id" element={<IssueDetailPanel />} />
+          </Route>
         </Routes>
       </main>
     </div>
+  );
+}
+
+/** Shared devices are common on the floor, so switching person is one tap. */
+function Identity() {
+  const { name, setName } = useActor();
+  if (!name.trim()) return null;
+  return (
+    <p className="hidden text-xs text-ink-muted sm:block">
+      <span className="text-ink">{name}</span>
+      <span aria-hidden="true"> · </span>
+      <button type="button" onClick={() => setName("")} className="underline-offset-4 hover:text-ink hover:underline">
+        Not you?
+      </button>
+    </p>
   );
 }
 
