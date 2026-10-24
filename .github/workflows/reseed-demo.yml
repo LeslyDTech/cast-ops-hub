@@ -1,0 +1,53 @@
+name: Reseed live demo
+
+# Resets the public demo to the sample data every night, so visitors always
+# see a realistic board no matter what the previous day's visitors did.
+# Also keeps the free Supabase project active (it pauses after a week idle).
+on:
+  schedule:
+    - cron: "0 10 * * *" # 10:00 UTC: about 3 a.m. Pacific, 6 a.m. Eastern
+  workflow_dispatch: # "Run workflow" button in the Actions tab
+
+concurrency:
+  group: reseed-demo
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  reseed:
+    name: Reseed cast_ops_demo
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      DATABASE_URL: ${{ secrets.DEMO_DATABASE_URL }}
+      # Only ever the demo schema: never dev (cast_ops) or tests (cast_ops_test).
+      DB_SCHEMA: cast_ops_demo
+
+    steps:
+      - name: Check configuration
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Repository secret DEMO_DATABASE_URL is not set (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+          test "$DB_SCHEMA" = "cast_ops_demo"
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Migrate first, in case the seed runs before the first deploy after a schema change.
+      - name: Apply migrations
+        run: npm run db:migrate
+
+      - name: Reseed sample data
+        run: npm run db:seed

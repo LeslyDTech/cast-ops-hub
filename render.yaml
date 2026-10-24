@@ -1,0 +1,42 @@
+# Render Blueprint: one web service runs the Express API and serves the built
+# React client from the same origin. Node version comes from .node-version.
+services:
+  - type: web
+    name: cast-ops-hub
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+
+    # Dev dependencies (TypeScript, Vite, tsx) are needed to build and to run
+    # migrations, even though NODE_ENV is production.
+    buildCommand: npm ci --include=dev && npm run build
+
+    # Free instances have no pre-deploy step, so migrations run right before
+    # the server starts. Re-running is safe: applied files are skipped and an
+    # advisory lock serializes concurrent runs. On a paid plan, move
+    # `npm run db:migrate` to preDeployCommand.
+    startCommand: npm run db:migrate && npm start
+
+    # Also checks the database, so a deploy with a bad DATABASE_URL never goes live.
+    healthCheckPath: /api/health
+
+    # CD: deploy a commit on main only after its GitHub Actions checks pass.
+    autoDeployTrigger: checksPass
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # The live demo has its own schema, separate from dev (cast_ops) and tests (cast_ops_test).
+      - key: DB_SCHEMA
+        value: cast_ops_demo
+      # One proxy (Render's) sits in front of the app; see README > Deployment.
+      - key: TRUST_PROXY
+        value: "1"
+      - key: WRITE_RATE_LIMIT
+        value: "30"
+      - key: REPORT_RATE_LIMIT
+        value: "10"
+      # Secret: entered in the Render dashboard, never committed.
+      - key: DATABASE_URL
+        sync: false

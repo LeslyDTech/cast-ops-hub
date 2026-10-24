@@ -2,6 +2,9 @@
 
 [![CI](https://github.com/LeslyDTech/cast-ops-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/LeslyDTech/cast-ops-hub/actions/workflows/ci.yml)
 
+**Live demo: [cast-ops-hub.onrender.com](https://cast-ops-hub.onrender.com)**
+<sub>Hosted on a free instance that sleeps when idle, so the first visit may take a moment (up to a minute) to wake up. Demo data resets every night.</sub>
+
 Internal issue reporting for restaurant and food & beverage teams.
 
 **Problem → who it helps → what it does.** On a busy shift, problems like a warm walk-in cooler, a broken high chair or a vendor short-ship get reported by shouting across the kitchen, in a group text or on a sticky note. Then they get lost, fixed twice, or never fixed. Cast Ops Hub gives **frontline cast members** a fast way to report an issue from their phone on the floor, and gives **shift leads and managers** one board showing what's open, what's being worked on and what's resolved, across every location. Each report has a category, a priority and a location. Every status change is recorded in an audit trail with who made it, when and why, so the next shift picks up exactly where the last one left off.
@@ -103,6 +106,7 @@ Open http://localhost:5173.
 | `npm run db:migrate` | Applies pending SQL migrations |
 | `npm run db:seed` | Replaces all data with the sample set |
 | `npm run db:reset` | Drops the app schema, re-migrates and re-seeds |
+| `npm run build` / `npm start` | Production build of both workspaces, then runs it (Express serves `client/dist`) |
 
 ---
 
@@ -249,7 +253,7 @@ npm test
 | Suite | Count | What it covers |
 |---|---|---|
 | Server unit | 66 | Every pair of statuses checked against the workflow, plus reachability. zod schemas: trimming, strict keys, list filters, strict ID parsing. Status-change orchestration with a mocked repository: lock, then update, then event, and nothing written on 404 or 409. |
-| Server API | 29 | Supertest against real Postgres: create, list, filter, get and update, plus the 400, 401, 404 and 409 paths. **Rollback is proven:** a trigger makes the audit insert fail after the update, and the test checks nothing changed. **Concurrency:** simultaneous changes must leave a history with no gaps or contradictions. |
+| Server API | 41 | Supertest against real Postgres: create, list, filter, get and update, plus the 400, 401, 404 and 409 paths. **Rollback is proven:** a trigger makes the audit insert fail after the update, and the test checks nothing changed. **Concurrency:** simultaneous changes must leave a history with no gaps or contradictions. Also covered: rate limits (429 shape, separate budgets per client IP behind a proxy, reads never limited) and serving the built client (app shell on page routes, cached assets, JSON 404s). |
 | Client | 54 | Filter↔URL round trips, sorting, age formatting, the shift summary. The report form: validation, focus, payload, server errors. The detail panel: only allowed moves shown, PATCH payload and actor header, conflict handling, 404, and focus return when closing. |
 
 The API tests use a separate schema, `cast_ops_test`, in the same database. It is rebuilt from the migration files on every run, so the tests also prove the migrations still apply cleanly. A guard refuses to wipe tables in any schema whose name doesn't end in `_test`.
@@ -264,6 +268,37 @@ The API tests use a separate schema, `cast_ops_test`, in the same database. It i
 4. Runs the server unit and API tests against that database, then the client tests and a production build.
 
 Locally, the same suite runs against Supabase. Set `DATABASE_SSL=false` only for a Postgres without TLS, like the one in CI.
+
+The last CI step starts the production build exactly as Render runs it and checks that the API, the database connection and the served client all answer. A passing CI run is also the deploy gate (see below).
+
+---
+
+## Deployment
+
+One **Render** web service runs Express. It serves the API under `/api` and the built React app for every other route, from the same origin, so there's no CORS setup and the client never needs an API URL. The service is defined in [`render.yaml`](render.yaml).
+
+```mermaid
+flowchart LR
+  Dev["git push to main"] --> CI["GitHub Actions CI<br/>typecheck · tests · build · smoke test"]
+  CI -- "all checks pass" --> Render["Render deploy<br/>npm ci, npm run build"]
+  Render --> Start["start: npm run db:migrate, then npm start"]
+  Start --> Live["cast-ops-hub.onrender.com<br/>schema: cast_ops_demo"]
+  Nightly["Nightly GitHub Action<br/>10:00 UTC"] -- "migrate + reseed" --> DB[("Supabase Postgres")]
+  Live --> DB
+```
+
+- **CD gate:** Render's `autoDeployTrigger: checksPass` deploys a commit on `main` only after every GitHub check on it passes. A red build never ships.
+- **Migrations on deploy:** free instances have no pre-deploy hook, so `npm run db:migrate` runs at the start of the start command. It's safe to re-run: applied files are skipped, and an advisory lock serializes concurrent runs. A failed migration stops the start, and the health check (which also pings the database) keeps the previous version live.
+- **Separate demo data:** the live site uses the `cast_ops_demo` schema, separate from dev (`cast_ops`) and tests (`cast_ops_test`). The [Reseed live demo](.github/workflows/reseed-demo.yml) workflow restores the sample data every night and can be run by hand from the Actions tab.
+- **Rate limiting:** the demo is public, so writes are limited per client IP. Each IP gets 30 changes and 10 new reports per 15 minutes; reads are never limited. Over the limit, the API returns a `429` in the usual error format, and the UI shows its message. `TRUST_PROXY=1` makes Express use the visitor's IP from `X-Forwarded-For`, not the IP of Render's proxy.
+- **Caching:** Vite's fingerprinted `/assets/*` files are cached for a year as immutable. `index.html` is `no-cache`, so a new deploy shows up on the next page load.
+
+| Variable | Where | Value |
+|---|---|---|
+| `DATABASE_URL` | Render (secret) | Supabase Session pooler URI |
+| `DB_SCHEMA` | `render.yaml` | `cast_ops_demo` |
+| `NODE_ENV`, `TRUST_PROXY`, `WRITE_RATE_LIMIT`, `REPORT_RATE_LIMIT` | `render.yaml` | `production`, `1`, `30`, `10` |
+| `DEMO_DATABASE_URL` | GitHub Actions secret | Same Supabase URI, used by the nightly reseed |
 
 ---
 
@@ -313,8 +348,8 @@ Locally, the same suite runs against Supabase. Set `DATABASE_SSL=false` only for
 
 | Phase | Item | Plan |
 |---|---|---|
-| 2 | **CI/CD** | **CI is done:** GitHub Actions runs the typecheck, unit tests, API tests against a temporary Postgres container, and a client build on every push and pull request. **Next, CD:** merges to `main` deploy automatically once deployment is set up. |
-| 2 | **Deployment** | API on a managed Node host, static client on a CDN, Supabase Postgres. Migrations run as a release step; health checks use `/api/health`; secrets live in the host's settings, not in files. |
+| 2 | **CI/CD** | **Done.** GitHub Actions runs the typecheck, tests against a temporary Postgres container, the build and a production smoke test on every push and pull request. Render deploys `main` only after those checks pass. |
+| 2 | **Deployment** | **Done.** A single Render web service serves the API and the client. Migrations run on deploy, there's a separate demo schema with a nightly reseed, and writes are rate limited. **Next:** a dedicated database role limited to `cast_ops_demo`, and security headers. |
 | 3 | **Microsoft SSO** | Sign-in with Microsoft Entra ID (OpenID Connect). Replace `resolveActor` with session-based middleware and `ActorProvider` with the signed-in user. Add `reported_by_user_id` / `changed_by_user_id`, then role-based permissions: cast members report, leads change status. |
 | 3 | **Twilio SMS alerts** | Text the on-duty lead when an urgent or safety issue is reported. Messages are queued in an outbox table written in the same transaction as the issue, so no alert is lost or sent twice. Opt-in phone numbers, quiet hours, and a delivery log. |
 | 3 | **Nightly reports** | A scheduled job builds a summary per location: new, resolved and still open; oldest open urgent issues; average time to resolve by category. Delivered by email, from SQL views over `issue_events`. |

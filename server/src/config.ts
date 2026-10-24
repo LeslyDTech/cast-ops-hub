@@ -22,6 +22,15 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .default("true")
     .transform((v) => v === "true"),
+  // Per-IP limits on writes, per 15 minutes. 0 turns a limit off (the test
+  // suite does, since every request there comes from one address).
+  WRITE_RATE_LIMIT: z.coerce.number().int().nonnegative().default(30),
+  REPORT_RATE_LIMIT: z.coerce.number().int().nonnegative().default(10),
+  // Number of reverse proxies in front of the app (Render: 1). Express then
+  // takes the client's IP from X-Forwarded-For instead of the proxy's.
+  TRUST_PROXY: z.coerce.number().int().nonnegative().default(0),
+  // Built client to serve in production. Defaults to client/dist in the repo.
+  CLIENT_DIST_DIR: z.string().optional(),
 });
 
 export const config = envSchema.parse(process.env);

@@ -1,5 +1,7 @@
 name: CI
 
+# Render deploys main only after this workflow passes (autoDeployTrigger:
+# checksPass in render.yaml), so this is also the deploy gate.
 on:
   push:
   pull_request:
@@ -44,7 +46,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version-file: .node-version # same version Render uses
           cache: npm
 
       - name: Install dependencies
@@ -64,5 +66,27 @@ jobs:
       - name: Test client
         run: npm test -w client
 
-      - name: Build client
-        run: npm run build -w client
+      - name: Build (client + server)
+        run: npm run build
+
+      # Starts the production build exactly as Render does (minus migrations,
+      # applied above) and checks the API and the served client answer.
+      - name: Smoke test production build
+        env:
+          NODE_ENV: production
+          PORT: "4000"
+        run: |
+          npm start > server.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:4000/api/health > /dev/null 2>&1 && break
+            sleep 1
+          done
+          set -x
+          curl -fsS http://localhost:4000/api/health | grep -q '"database":"ok"'
+          curl -fsS http://localhost:4000/ | grep -q '<div id="root">'
+          curl -fsS http://localhost:4000/issues/1 | grep -q '<div id="root">'
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4000/api/nope)" = "404"
+
+      - name: Server log (on failure)
+        if: failure()
+        run: cat server.log || true

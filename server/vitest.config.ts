@@ -4,6 +4,10 @@ import { defineConfig } from "vitest/config";
 // dotenv never overrides variables that are already set, and workers inherit this.
 process.env.DB_SCHEMA = "cast_ops_test";
 process.env.NODE_ENV = "test";
+// Every test request comes from one address; tests that cover rate limiting
+// pass their own limits to createApp().
+process.env.WRITE_RATE_LIMIT = "0";
+process.env.REPORT_RATE_LIMIT = "0";
 
 export default defineConfig({
   test: {
