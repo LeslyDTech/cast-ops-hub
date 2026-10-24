@@ -6,7 +6,7 @@ describe("GET /api/health", () => {
   it("responds ok", async () => {
     const res = await request(createApp()).get("/api/health");
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ status: "ok" });
+    expect(res.body).toEqual({ status: "ok", database: "ok" });
   });
 
   it("returns JSON 404 for unknown routes", async () => {

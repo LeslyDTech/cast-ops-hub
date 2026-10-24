@@ -8,6 +8,9 @@
   "scripts": {
     "dev:server": "npm run dev -w server",
     "test": "npm test -w server",
-    "typecheck": "npm run typecheck -w server"
+    "typecheck": "npm run typecheck -w server",
+    "db:migrate": "npm run db:migrate -w server",
+    "db:seed": "npm run db:seed -w server",
+    "db:reset": "npm run db:reset -w server"
   }
 }
