@@ -14,17 +14,12 @@ const ssl = config.DATABASE_CA_CERT
 export const pool = new Pool({
   connectionString: config.DATABASE_URL,
   ssl,
+  // Sent at connection startup, so every session resolves unqualified table
+  // names against our schema before its first query, with no extra round trip.
+  options: `-c search_path=${config.DB_SCHEMA}`,
   max: 10,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 10_000,
-});
-
-// Every connection resolves unqualified table names against our schema.
-// pg queues queries per client, so this runs before anything else on it.
-pool.on("connect", (client) => {
-  client.query(`SET search_path TO ${config.DB_SCHEMA}`).catch((err) => {
-    console.error("Failed to set search_path", err);
-  });
 });
 
 // An idle client erroring (e.g. the server dropped it) must not crash the process.

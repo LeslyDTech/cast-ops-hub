@@ -1,4 +1,5 @@
 import type { Status } from "../issues/domain.js";
+import { canTransition } from "../issues/status-transitions.js";
 import { withTransaction } from "./pool.js";
 import { issues, locations } from "./seed-data.js";
 
@@ -41,6 +42,9 @@ export async function seed(log: (msg: string) => void = console.log) {
         const at = new Date(createdAt.getTime() + h.at * 60_000);
         if (at <= updatedAt || at.getTime() > now) {
           throw new Error(`Seed history out of order for "${issue.title}"`);
+        }
+        if (!canTransition(status, h.to)) {
+          throw new Error(`Seed history for "${issue.title}" has invalid move ${status} -> ${h.to}`);
         }
         issueEvents.push({ from: status, to: h.to, note: h.note ?? null, by: h.by, at });
         status = h.to;
