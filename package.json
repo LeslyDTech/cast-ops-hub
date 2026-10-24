@@ -1,0 +1,13 @@
+{
+  "name": "cast-ops-hub",
+  "private": true,
+  "description": "Internal issue reporting for food & beverage teams",
+  "workspaces": [
+    "server"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev -w server",
+    "test": "npm test -w server",
+    "typecheck": "npm run typecheck -w server"
+  }
+}
