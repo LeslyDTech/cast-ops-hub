@@ -12,7 +12,9 @@
     "test:watch": "vitest",
     "db:migrate": "tsx scripts/db.ts migrate",
     "db:seed": "tsx scripts/db.ts seed",
-    "db:reset": "tsx scripts/db.ts reset"
+    "db:reset": "tsx scripts/db.ts reset",
+    "test:unit": "vitest run --project unit",
+    "test:api": "vitest run --project api"
   },
   "dependencies": {
     "dotenv": "^18.0.9",

@@ -4,9 +4,18 @@ import { CATEGORIES, PRIORITIES, STATUSES } from "./domain.js";
 // Postgres `integer` tops out here; larger ids would be a DB error, not a 404.
 const MAX_INT4 = 2_147_483_647;
 
-export const idSchema = z.coerce.number().int().positive().max(MAX_INT4);
+// JSON bodies must send a real number: no "2", no `true` coerced to 1.
+const idSchema = z.number().int().positive().max(MAX_INT4);
 
-export const issueIdParamsSchema = z.object({ id: idSchema });
+// Path and query values are always strings; accept plain digits only
+// (coercion would also let through "1e3", "0x10", " 7 ").
+const idStringSchema = z
+  .string()
+  .regex(/^\d+$/, "Must be a positive whole number")
+  .transform(Number)
+  .pipe(idSchema);
+
+export const issueIdParamsSchema = z.object({ id: idStringSchema });
 
 // strictObject rejects unknown keys, so a client can't sneak in fields like
 // `status` or `reported_by` that the server is responsible for setting.
@@ -20,12 +29,13 @@ export const createIssueSchema = z.strictObject({
 
 export const updateStatusSchema = z.strictObject({
   status: z.enum(STATUSES),
+  // A blank note means "no note"; optional() is outermost so the type is `note?: string`.
   note: z
     .string()
     .trim()
     .max(500)
-    .optional()
-    .transform((n) => (n ? n : undefined)),
+    .transform((n) => n || undefined)
+    .optional(),
 });
 
 /**
@@ -46,7 +56,7 @@ function listParam<T extends z.ZodType>(item: T) {
 export const listIssuesQuerySchema = z.object({
   status: listParam(z.enum(STATUSES)),
   priority: listParam(z.enum(PRIORITIES)),
-  locationId: listParam(idSchema),
+  locationId: listParam(idStringSchema),
 });
 
 export type CreateIssueInput = z.infer<typeof createIssueSchema>;
