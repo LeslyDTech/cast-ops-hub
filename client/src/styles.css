@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+/* Design tokens: the only place colors, fonts and radii are defined.
+   Tailwind turns each --color-* into utilities (bg-paper, text-ink, border-line…). */
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  /* Warm paper neutrals. ink-muted is 6.3:1 on paper (WCAG AA for body text). */
+  --color-paper: #f5f3ee;
+  --color-surface: #ffffff;
+  --color-sunken: #ebe8e1;
+  --color-ink: #1d1c1a;
+  --color-ink-muted: #5c5850;
+  --color-line: #e2ded5;
+  --color-line-strong: #c9c3b6;
+
+  /* The single accent: primary actions and focus. */
+  --color-accent: #1e5b47;
+  --color-accent-strong: #154334;
+  --color-accent-soft: #e3eee9;
+
+  /* Priority. Always paired with a text label, never color alone. */
+  --color-urgent: #b42318;
+  --color-urgent-soft: #fdecea;
+  /* Amber, a different hue from urgent red, so the two separate at a glance. */
+  --color-high: #8a5a00;
+  --color-high-soft: #fcf1d6;
+
+  --color-danger: #b42318;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    font-feature-settings: "tnum" 1; /* tabular numbers: counts and ages line up */
+  }
+  body {
+    @apply bg-paper text-ink font-sans text-sm antialiased;
+    line-height: 1.5;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0ms !important;
+      animation-duration: 0ms !important;
+    }
+  }
+}

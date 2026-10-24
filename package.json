@@ -3,16 +3,22 @@
   "private": true,
   "description": "Internal issue reporting for food & beverage teams",
   "workspaces": [
+    "client",
     "server"
   ],
   "scripts": {
+    "dev": "concurrently -n api,web -c yellow,cyan \"npm run dev -w server\" \"npm run dev -w client\"",
     "dev:server": "npm run dev -w server",
-    "test": "npm test -w server",
-    "typecheck": "npm run typecheck -w server",
+    "test": "npm test --workspaces",
+    "typecheck": "npm run typecheck --workspaces",
     "db:migrate": "npm run db:migrate -w server",
     "db:seed": "npm run db:seed -w server",
     "db:reset": "npm run db:reset -w server",
     "test:unit": "npm run test:unit -w server",
-    "test:api": "npm run test:api -w server"
+    "test:api": "npm run test:api -w server",
+    "dev:client": "npm run dev -w client"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
   }
 }
