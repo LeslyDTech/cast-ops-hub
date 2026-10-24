@@ -16,6 +16,12 @@ const envSchema = z.object({
     .regex(/^[a-z_][a-z0-9_]*$/, "DB_SCHEMA must be a lowercase SQL identifier")
     .default("cast_ops"),
   DATABASE_CA_CERT: z.string().optional(),
+  // TLS is on by default (Supabase requires it). CI's throwaway Postgres
+  // container has no TLS, so it opts out explicitly.
+  DATABASE_SSL: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((v) => v === "true"),
 });
 
 export const config = envSchema.parse(process.env);

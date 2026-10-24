@@ -7,9 +7,11 @@ const { Pool } = pg;
 // Supabase requires TLS. Its certificate is signed by Supabase's own CA, which
 // isn't in Node's trust store, so full verification needs the CA file. Without
 // it the connection is still encrypted, just not verified.
-const ssl = config.DATABASE_CA_CERT
-  ? { ca: readFileSync(config.DATABASE_CA_CERT, "utf8"), rejectUnauthorized: true }
-  : { rejectUnauthorized: false };
+const ssl = !config.DATABASE_SSL
+  ? false
+  : config.DATABASE_CA_CERT
+    ? { ca: readFileSync(config.DATABASE_CA_CERT, "utf8"), rejectUnauthorized: true }
+    : { rejectUnauthorized: false };
 
 export const pool = new Pool({
   connectionString: config.DATABASE_URL,

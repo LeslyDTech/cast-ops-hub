@@ -1,5 +1,7 @@
 # Cast Ops Hub
 
+[![CI](https://github.com/LeslyDTech/cast-ops-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/LeslyDTech/cast-ops-hub/actions/workflows/ci.yml)
+
 Internal issue reporting for restaurant and food & beverage teams.
 
 **Problem → who it helps → what it does.** On a busy shift, problems like a warm walk-in cooler, a broken high chair or a vendor short-ship get reported by shouting across the kitchen, in a group text or on a sticky note. Then they get lost, fixed twice, or never fixed. Cast Ops Hub gives **frontline cast members** a fast way to report an issue from their phone on the floor, and gives **shift leads and managers** one board showing what's open, what's being worked on and what's resolved, across every location. Each report has a category, a priority and a location. Every status change is recorded in an audit trail with who made it, when and why, so the next shift picks up exactly where the last one left off.
@@ -58,7 +60,7 @@ Internal issue reporting for restaurant and food & beverage teams.
 ### 1. Install
 
 ```bash
-git clone <your-repo-url> cast-ops-hub
+git clone https://github.com/LeslyDTech/cast-ops-hub.git
 cd cast-ops-hub
 npm install
 ```
@@ -252,6 +254,17 @@ npm test
 
 The API tests use a separate schema, `cast_ops_test`, in the same database. It is rebuilt from the migration files on every run, so the tests also prove the migrations still apply cleanly. A guard refuses to wipe tables in any schema whose name doesn't end in `_test`.
 
+### Continuous integration
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push and pull request:
+
+1. `npm ci`, then the TypeScript check for both workspaces.
+2. Starts a throwaway **Postgres 17 container**, so no Supabase credentials are ever stored in CI.
+3. Applies the migrations to the fresh database, as their own step so a broken migration fails with a clear error.
+4. Runs the server unit and API tests against that database, then the client tests and a production build.
+
+Locally, the same suite runs against Supabase. Set `DATABASE_SSL=false` only for a Postgres without TLS, like the one in CI.
+
 ---
 
 ## Design decisions
@@ -300,7 +313,7 @@ The API tests use a separate schema, `cast_ops_test`, in the same database. It i
 
 | Phase | Item | Plan |
 |---|---|---|
-| 2 | **CI/CD** | GitHub Actions on every pull request: typecheck, unit tests, API tests against a temporary Postgres service container, and a client build. Merges to `main` deploy automatically. |
+| 2 | **CI/CD** | **CI is done:** GitHub Actions runs the typecheck, unit tests, API tests against a temporary Postgres container, and a client build on every push and pull request. **Next, CD:** merges to `main` deploy automatically once deployment is set up. |
 | 2 | **Deployment** | API on a managed Node host, static client on a CDN, Supabase Postgres. Migrations run as a release step; health checks use `/api/health`; secrets live in the host's settings, not in files. |
 | 3 | **Microsoft SSO** | Sign-in with Microsoft Entra ID (OpenID Connect). Replace `resolveActor` with session-based middleware and `ActorProvider` with the signed-in user. Add `reported_by_user_id` / `changed_by_user_id`, then role-based permissions: cast members report, leads change status. |
 | 3 | **Twilio SMS alerts** | Text the on-duty lead when an urgent or safety issue is reported. Messages are queued in an outbox table written in the same transaction as the issue, so no alert is lost or sent twice. Opt-in phone numbers, quiet hours, and a delivery log. |
